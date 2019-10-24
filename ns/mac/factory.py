@@ -1,3 +1,5 @@
+BROADCAST_MAC_ADDRESS = 'FFFFFFFFFFFF'
+
 def _mac_address_factory():
   _mac_address = 160 # arbitary number
 
