@@ -21,7 +21,10 @@ class Node:
 
   def _send_to_node(self, message, to_mac):
     frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message)
-    self._connected_nodes[to_mac].receive(frame)
+    try:
+      self._connected_nodes[to_mac].receive(frame)
+    except KeyError:
+      print('Node {} is not connected to {} directly.'.format(to_mac, self.mac_addr))
 
   def _send_to_switch(self, message, to_mac):
     for sw in self._connected_switches.values():
@@ -39,10 +42,8 @@ class Node:
       raise ValueError('Unknown device!')
 
   def send(self, message, to_mac):
-    try:
-      self._send_to_node(message, to_mac)
-    except KeyError:
-      self._send_to_switch(message, to_mac)
+    self._send_to_switch(message, to_mac)
+    self._send_to_node(message, to_mac)
 
   def broadcast(self, message):
     for node_mac in self._connected_nodes.keys():
