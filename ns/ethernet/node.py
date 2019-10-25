@@ -2,8 +2,9 @@ from ns.ethernet.frame import EthernetFrame
 from ns.mac import BROADCAST_MAC_ADDRESS
 
 class Node:
-  def __init__(self, mac_addr):
+  def __init__(self, mac_addr, broadcast_domain):
     self._mac_addr = mac_addr
+    self.broadcast_domain = broadcast_domain
     self._connected_nodes = { mac_addr: self }
     self._connected_routers = {}
     self._connected_switches = {}
@@ -20,7 +21,7 @@ class Node:
     raise PermissionError('MAC address cannot be changed!')
 
   def _send_to_node(self, message, to_mac):
-    frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message)
+    frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message, self.broadcast_domain)
     try:
       self._connected_nodes[to_mac].receive(frame)
     except KeyError:
@@ -28,7 +29,7 @@ class Node:
 
   def _send_to_switch(self, message, to_mac):
     for sw in self._connected_switches.values():
-      frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message)
+      frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message, self.broadcast_domain)
       sw.receive(frame)
 
   def connect(self, node):
@@ -46,9 +47,9 @@ class Node:
     self._send_to_node(message, to_mac)
 
   def broadcast(self, message):
-    for node_mac in self._connected_nodes.keys():
-      frame = EthernetFrame(self.mac_addr, BROADCAST_MAC_ADDRESS, 'IPv4', message)
-      self._connected_nodes[node_mac].receive(frame)
+    self._send_to_switch(message, BROADCAST_MAC_ADDRESS)
+    # for node_mac in self._connected_nodes.keys():
+    #   self._send_to_node(message, BROADCAST_MAC_ADDRESS)
 
   def receive(self, frame):
     print('{} {} received a message "{}" from node {}'.format(self.get_type().title(), 
@@ -57,4 +58,4 @@ class Node:
                                                               frame.source_mac_addr))
 
   def __repr__(self):
-    return "Node '{}'. Connected to '{}'".format(self.mac_addr, self._connected_nodes.keys)
+    return "Node '{}'. Connected to '{}'".format(self.mac_addr, self._connected_nodes.keys())

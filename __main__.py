@@ -1,11 +1,15 @@
 import ns
 
-node1 = ns.ethernet.Node(ns.mac_address_factory())
-node2 = ns.ethernet.Node(ns.mac_address_factory())
-switch = ns.ethernet.Switch(ns.mac_address_factory(), 4)
+node1 = ns.ethernet.Node(ns.mac_address_factory(), broadcast_domain = "B1")
+node2 = ns.ethernet.Node(ns.mac_address_factory(), broadcast_domain = "B2")
+node3 = ns.ethernet.Node(ns.mac_address_factory(), broadcast_domain = "B1")
+switch = ns.ethernet.Switch(ns.mac_address_factory(), num_of_ports = 4)
 ns.ethernet.connect(switch, node1)
 ns.ethernet.connect(switch, node2)
+ns.ethernet.connect(switch, node3)
 print(node1)
 print(node2)
+print(node3)
 print(switch)
 node1.send('hello from node 1', node2.mac_addr)
+node1.broadcast('broadcast from node 1')
