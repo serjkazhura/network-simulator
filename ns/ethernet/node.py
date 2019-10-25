@@ -5,6 +5,8 @@ class Node:
   def __init__(self, mac_addr):
     self._mac_addr = mac_addr
     self._connected_nodes = { mac_addr: self }
+    self._connected_routers = {}
+    self._connected_switches = {}
 
   def get_type(self):
     return "node"
@@ -17,19 +19,28 @@ class Node:
   def mac_addr(self, value):
     raise PermissionError('MAC address cannot be changed!')
 
+  def _send_to_node(self, message, to_mac):
+    frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message)
+    self._connected_nodes[to_mac].receive(frame)
+
   def _send_to_switch(self, message, to_mac):
-    switches = [sw for sw in self._connected_nodes.values() if sw.get_type() == 'switch']
-    for sw in switches:
+    for sw in self._connected_switches.values():
       frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message)
       sw.receive(frame)
 
   def connect(self, node):
-    self._connected_nodes[node.mac_addr] = node
+    if (node.get_type() == 'node'):
+      self._connected_nodes[node.mac_addr] = node
+    elif (node.get_type() == 'switch'):
+      self._connected_switches[node.mac_addr] = node
+    elif (node.get_type() == 'router'):
+      self._connected_routers[node.mac_addr] = node
+    else:
+      raise ValueError('Unknown device!')
 
   def send(self, message, to_mac):
-    frame = EthernetFrame(self.mac_addr, to_mac, 'IPv4', message)
     try:
-      self._connected_nodes[to_mac].receive(frame)
+      self._send_to_node(message, to_mac)
     except KeyError:
       self._send_to_switch(message, to_mac)
 
@@ -39,7 +50,10 @@ class Node:
       self._connected_nodes[node_mac].receive(frame)
 
   def receive(self, frame):
-    print('Node {} received a message "{}" from node {}'.format(self.mac_addr, frame.data, frame.source_mac_addr))
+    print('{} {} received a message "{}" from node {}'.format(self.get_type().title(), 
+                                                              self.mac_addr, 
+                                                              frame.data, 
+                                                              frame.source_mac_addr))
 
   def __repr__(self):
     return "Node '{}'. Connected to '{}'".format(self.mac_addr, self._connected_nodes.keys)
